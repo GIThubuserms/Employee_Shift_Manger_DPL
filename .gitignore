@@ -10,6 +10,13 @@
 *.userosscache
 *.sln.docstates
 
+infra/terraform/my-keypair.pub
+infra/terraform/my-keypair
+infra/terraform/terraform.tfstate
+infra/terraform/terraform.tfstate.backup
+.terraform
+.terraform.lock.hcl
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

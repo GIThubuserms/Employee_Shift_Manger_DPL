@@ -1,0 +1,4 @@
+env: dev
+install_jenkins: true
+install_prometheus: false
+install_grafana: false

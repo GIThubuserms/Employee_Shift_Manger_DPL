@@ -1,0 +1,17 @@
+- name: Download Kind binary
+  get_url:
+    url: "https://kind.sigs.k8s.io/dl/v0.29.0/kind-linux-amd64"
+    dest: /usr/local/bin/kind
+    mode: "0755"
+
+- name: Get latest kubectl version
+  uri:
+    url: https://dl.k8s.io/release/stable.txt
+    return_content: yes
+  register: kubectl_version
+
+- name: Download kubectl
+  get_url:
+    url: "https://dl.k8s.io/release/{{ kubectl_version.content }}/bin/linux/amd64/kubectl"
+    dest: /usr/local/bin/kubectl
+    mode: "0755"

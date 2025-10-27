@@ -1,0 +1,53 @@
+---
+# roles/monitoring/tasks/main.yml
+
+- name: Create Prometheus configuration directory
+  file:
+    path: /etc/prometheus
+    state: directory
+    mode: '0755'
+
+- name: Copy Prometheus configuration file
+  copy:
+    src: prometheus.yml
+    dest: /etc/prometheus/prometheus.yml
+    mode: '0644'
+
+- name: Run Prometheus container
+  docker_container:
+    name: prometheus
+    image: prom/prometheus:latest
+    restart_policy: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+- name: Create Grafana data directory
+  file:
+    path: /var/lib/grafana
+    state: directory
+    mode: '0755'
+
+- name: Run Grafana container
+  docker_container:
+    name: grafana
+    image: grafana/grafana:latest
+    restart_policy: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - /var/lib/grafana:/var/lib/grafana
+    env:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+
+- name: Wait for Grafana to be ready
+  uri:
+    url: http://localhost:3000/login
+    method: GET
+    status_code: 200
+  register: grafana_status
+  retries: 10
+  delay: 5
+  until: grafana_status.status == 200

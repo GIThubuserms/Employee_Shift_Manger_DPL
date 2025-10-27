@@ -1,0 +1,20 @@
+- hosts: all
+  become: yes
+  vars_files:
+    - "../group_vars/{{ env }}.yml"
+
+  roles:
+    - common
+    - docker
+    - jenkins
+    - kubernetes
+
+  tasks:
+    - name: Install monitoring only on prod
+      when: install_prometheus or install_grafana
+      import_role:
+        name: monitoring
+
+
+# ansible-playbook -i inventories/dev/hosts playbooks/main.yml --extra-vars "env=dev"
+
