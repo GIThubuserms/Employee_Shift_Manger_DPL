@@ -12,4 +12,4 @@ WORKDIR /app
 
 COPY --from=builder /app ./
 
-CMD ["npm","start"]
+CMD ["node", "index.js"]
