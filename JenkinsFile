@@ -1,0 +1,97 @@
+@Library('sharedLIB') _
+
+pipeline {
+    agent any
+
+    environment {
+        BACKEND_IMAGE = "murtaza0318/emsapp-backend"
+        DOCKER_CRED = "DockerHubCred"
+        GIT_CRED = "GitHubCred"
+        GIT_REPO = "https://github.com/GIThubuserms/Employee_Shift_Manger_DPL.git"
+        GITOPS_REPO = "https://github.com/GIThubuserms/Employee_Shift_Manger_DPL_GITOPS.git"
+        VERSION = "v${BUILD_NUMBER}"
+        AWS_CRED = "AWS_Cred" // Jenkins AWS credentials ID
+        AWS_REGION = "ap-south-1"
+        S3_BUCKET = "emsappfrontendbucket"
+    }
+
+    stages {
+        stage("Code Clone") {
+            steps {
+                git branch: 'master', url: "${GIT_REPO}", credentialsId: "${GIT_CRED}"
+            }
+        }
+
+        stage("Build Backend Docker Image") {
+            steps {
+                dir('backend') {
+                    sh "docker build -t ${BACKEND_IMAGE}:${VERSION} ."
+                }
+            }
+        }
+
+        stage("Login to DockerHub") {
+            steps {
+                dockerpush(env.DOCKER_CRED)
+            }
+        }
+
+        stage("Push Backend Docker Image") {
+            steps {
+                sh "docker push ${BACKEND_IMAGE}:${VERSION}"
+            }
+        }
+
+        stage("AWS Login") {
+            steps {
+                withAWS(credentials: "${AWS_CRED}", region: "${AWS_REGION}") {
+                    sh "aws sts get-caller-identity"
+                }
+            }
+        }
+
+        stage("Build Frontend and Upload to S3") {
+            steps {
+                dir('frontend') {
+                    withAWS(credentials: "${AWS_CRED}", region: "${AWS_REGION}") {
+                        sh """
+                        echo 'VITE_API_URL=http://98.89.86.231:5000' > .env
+                        npm install
+                        npx vite build
+                        aws s3 sync dist/ s3://${S3_BUCKET}/ --delete
+                        """
+                    }
+                }
+            }
+        }
+
+        stage("Clone GitOps Repo") {
+            steps {
+                sh '''
+                rm -rf gitops
+                git clone ${GITOPS_REPO} gitops
+                '''
+            }
+        }
+
+        stage("Update Backend Manifest File") {
+            steps {
+                dir('gitops') {
+                    withCredentials([usernamePassword(credentialsId: "${GIT_CRED}", usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                        sh '''
+                        git config user.name "Jenkins CI"
+                        git config user.email "ci@murtaza.dev"
+
+                        # Update backend image tag dynamically
+                        sed -i "s|image: *murtaza0318/emsapp-backend:.*|image: ${BACKEND_IMAGE}:${VERSION}|" k8s/deployment.yml
+
+                        git add k8s/deployment.yml
+                        git commit -m "Update backend image to ${VERSION}" || true
+                        git push https://${GIT_USER}:${GIT_PASS}@github.com/GIThubuserms/Employee_Shift_Manger_DPL_GITOPS.git master
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}

@@ -16,11 +16,15 @@ const app = express();
 
 app.use(
   cors({
-    origin: "http://emsappfrontendbucket.s3-website-us-east-1.amazonaws.com",
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: ["http://emsappfrontendbucket.s3-website-us-east-1.amazonaws.com"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
+
+// Explicitly handle OPTIONS preflight requests
+app.options("*", cors());
 
 connectDB();
 app.use(express.json());
