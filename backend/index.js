@@ -4,14 +4,6 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-const errorHandler = require("./middlewares/errorHandler");
-const connectDB = require("./config/db");
-// const queryHandler = require("./middlewares/queryHandler");
-
-const authRoutes = require("./routes/authRoutes");
-const userRoutes = require("./routes/userRoutes");
-const shiftRoutes = require("./routes/shiftRoutes");
-
 const app = express();
 
 app.use(
@@ -22,9 +14,20 @@ app.use(
     credentials: true,
   })
 );
+app.options("*", cors());
+
+
+
+const errorHandler = require("./middlewares/errorHandler");
+const connectDB = require("./config/db");
+// const queryHandler = require("./middlewares/queryHandler");
+
+const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const shiftRoutes = require("./routes/shiftRoutes");
+
 
 // Explicitly handle OPTIONS preflight requests
-app.options("*", cors());
 
 connectDB();
 app.use(express.json());
